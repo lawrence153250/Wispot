@@ -1,5 +1,32 @@
 <?php
-// Include your database configuration
+// Start the session
+session_start();
+
+// Set session timeout to 15 minutes (900 seconds)
+$inactive = 900; 
+
+// Check if timeout variable is set
+if (isset($_SESSION['timeout'])) {
+    // Calculate the session's lifetime
+    $session_life = time() - $_SESSION['timeout'];
+    if ($session_life > $inactive) {
+        // Logout and redirect to login page
+        session_unset();
+        session_destroy();
+        header("Location: login.php?timeout=1");
+        exit();
+    }
+}
+
+// Update timeout with current time
+$_SESSION['timeout'] = time();
+
+// Check if user is logged in and is admin
+if (!isset($_SESSION['username']) || $_SESSION['userlevel'] !== 'admin') {
+    header("Location: login.php");
+    exit();
+}
+
 require_once('config.php');
 
 // Check if this is an AJAX request for locations data
@@ -49,188 +76,342 @@ if (isset($_GET['get_locations']) && $_GET['get_locations'] == '1') {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Booking Locations Map</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Realtime Monitoring</title>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="style.css">
+<style>
+    /* Sidebar Styles */
+        .sidebar .sidebar-menu li a.nav-link {
+        color: #FFFFFF !important;
         }
-        h1 {
-            color: #2c3e50;
-            text-align: center;
+        .sidebar {
+            width: 250px;
+            background-color: #2c3e50;
+            color: white;
+            height: 100vh;
+            position: fixed;
+            overflow-y: auto; /* Enable vertical scrolling */
+            overflow-x: hidden; /* Hide horizontal scrollbar */
+        }
+        
+        .sidebar-content {
+            padding: 20px 0;
+            min-height: 100%; /* Ensure content takes full height */
+        }
+        
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #34495e;
             margin-bottom: 20px;
         }
-        #map-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
+        
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
         }
-        #map {
-            height: 600px;
-            width: 100%;
-        }
-        .controls {
-            background: #3498db;
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: white;
-        }
-        .controls-left {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        .controls-right {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        #refresh, #filter-btn, #search-btn {
-            background: white;
-            color: #3498db;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
+        
+        .sidebar-menu li {
+            font-size: 2vh;
+            padding: 10px 15px;
             cursor: pointer;
-            font-size: 14px;
-            font-weight: bold;
-        }
-        #refresh:hover, #filter-btn:hover, #search-btn:hover {
-            background: #f8f9fa;
-        }
-        #status {
-            font-size: 14px;
-        }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            display: none;
-            margin: 20px auto;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .map-info-window {
-            padding: 15px;
-            min-width: 250px;
-        }
-        .map-info-window h3 {
-            margin-top: 0;
-            color: #3498db;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 8px;
-        }
-        .booking-detail {
-            margin-bottom: 8px;
-        }
-        .booking-detail-label {
-            font-weight: bold;
-            color: #555;
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        .status-pending {
-            background-color: #FFF3CD;
-            color: #856404;
-        }
-        .status-confirmed {
-            background-color: #D4EDDA;
-            color: #155724;
-        }
-        .status-in-progress {
-            background-color: #CCE5FF;
-            color: #004085;
-        }
-        .status-completed {
-            background-color: #D1ECF1;
-            color: #0C5460;
-        }
-        .status-cancelled {
-            background-color: #F8D7DA;
-            color: #721C24;
-        }
-        .status-for-approval {
-            background-color: #E2E3E5;
-            color: #383D41;
-        }
-        .connection-status {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .connected {
-            background-color: #d4edda;
-            color: #155724;
-        }
-
-        .connecting {
-            background-color: #cce5ff;
-            color: #004085;
-        }
-
-        .connection-error {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-
-        .unknown {
-            background-color: #e2e3e5;
-            color: #383d41;
+            transition: background-color 0.3s;
         }
         
-        #status-filter, #location-search {
-            padding: 7px;
-            border-radius: 4px;
-            border: none;
-            font-size: 14px;
-            width: 200px;
+        .sidebar-menu li:hover {
+            background-color: #34495e;
         }
         
-        .highlighted-marker {
-            animation: pulse 1.5s infinite;
+        .sidebar-menu li.active {
+            background-color: #34485f;
         }
         
-        @keyframes pulse {
-            0% {
-                transform: scale(1);
-                opacity: 1;
+
+        /* Custom scrollbar for webkit browsers */
+                .sidebar::-webkit-scrollbar {
+                    width: 6px;
+                }
+                
+                .sidebar::-webkit-scrollbar-track {
+                    background: #34495e;
+                }
+                
+                .sidebar::-webkit-scrollbar-thumb {
+                    background: #5a6c7d;
+                    border-radius: 3px;
+                }
+                
+                .sidebar::-webkit-scrollbar-thumb:hover {
+                    background: #7f8c8d;
+                }
+
+        @media (max-width: 576px) {
+            .sidebar {
+                width: 60px;
             }
-            50% {
-                transform: scale(1.3);
-                opacity: 0.7;
+
+            .main-content {
+                margin-left: 60px;
+                width: calc(100% - 60px);
+                padding: 15px;
             }
-            100% {
-                transform: scale(1);
-                opacity: 1;
+
+            .sidebar-menu li {
+                padding: 8px 10px;
+                font-size: 1.8vh;
             }
         }
-    </style>
+
+
+    body, html {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background-color: #f8f9fa;
+        color: #333;
+    }
+    
+    #map-container {
+        margin-left: 250px;
+        width: calc(100% - 250px);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        background: white;
+        overflow: hidden;
+    }
+    
+    #map {
+        flex: 1;
+        width: 100%;
+        min-height: 0; /* Fix for flexbox in some browsers */
+    }
+    
+    .controls {
+        background: #3498db;
+        padding: 15px 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: white;
+        flex-wrap: wrap;
+        gap: 15px;
+        flex-shrink: 0;
+    }
+    
+    .controls h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+    
+    .controls-left, .controls-right {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    
+    #refresh, #filter-btn, #search-btn {
+        background: white;
+        color: #3498db;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    #refresh:hover, #filter-btn:hover, #search-btn:hover {
+        background: #f1f1f1;
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    }
+    
+    #status {
+        font-size: 14px;
+        background: rgba(255,255,255,0.2);
+        padding: 5px 10px;
+        border-radius: 4px;
+    }
+    
+    .loader {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        display: none;
+        margin: 20px auto;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .map-info-window {
+        padding: 15px;
+        min-width: 250px;
+    }
+    
+    .map-info-window h3 {
+        margin-top: 0;
+        color: #3498db;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 8px;
+        font-size: 1.1rem;
+    }
+    
+    .booking-detail {
+        margin-bottom: 10px;
+        line-height: 1.4;
+    }
+    
+    .booking-detail-label {
+        font-weight: 600;
+        color: #555;
+        display: inline-block;
+        min-width: 90px;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .status-pending {
+        background-color: #FFF3CD;
+        color: #856404;
+    }
+    
+    .status-confirmed {
+        background-color: #D4EDDA;
+        color: #155724;
+    }
+    
+    .status-in-progress {
+        background-color: #CCE5FF;
+        color: #004085;
+    }
+    
+    .status-completed {
+        background-color: #D1ECF1;
+        color: #0C5460;
+    }
+    
+    .status-cancelled {
+        background-color: #F8D7DA;
+        color: #721C24;
+    }
+    
+    .status-for-approval {
+        background-color: #E2E3E5;
+        color: #383D41;
+    }
+    
+    .connection-status {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .connected {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .connecting {
+        background-color: #cce5ff;
+        color: #004085;
+    }
+
+    .connection-error {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .unknown {
+        background-color: #e2e3e5;
+        color: #383d41;
+    }
+    
+    #status-filter, #location-search {
+        padding: 8px 12px;
+        border-radius: 4px;
+        border: none;
+        font-size: 14px;
+        width: 200px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    #status-filter:focus, #location-search:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(52,152,219,0.3);
+    }
+    
+    .highlighted-marker {
+        animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.3);
+            opacity: 0.7;
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+</style>
 </head>
 <body>
+
+ <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <a class="navbar-brand" href="adminhome.php"><img src="logo.png"></a>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a class="nav-link" href="adminhome.php">DASHBOARD</a></li>
+            <li><a class="nav-link" href="admin_accounts.php">ACCOUNTS</a></li>
+            <li><a class="nav-link" href="admin_services.php">SERVICES</a></li>
+            <li class="active"><a class="nav-link" href="admin_booking.php">BOOKING MANAGEMENT</a></li>
+            <li><a class="nav-link" href="admin_management.php">REPORTS MANAGEMENT</a></li>
+            <li><a class="nav-link" href="admin_announcements.php">ANNOUNCEMENTS</a></li>
+            <li><a class="nav-link" href="admin_resetpass.php">RESET PASSWORD</a></li>
+            <li><span><a class="nav-link" href="logout.php">LOGOUT</a></span></li>
+        </ul>
+    </div>
+
     <div id="map-container">
         <div class="controls">
             <div class="controls-left">
-                <h2>Booking Event Locations</h2>
+                <h2>Booking Realtime Monitoring</h2>
                 <select id="status-filter">
                     <option value="">All Statuses</option>
                     <option value="Pending">Pending</option>

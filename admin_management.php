@@ -22,31 +22,24 @@ if (isset($_SESSION['timeout'])) {
 $_SESSION['timeout'] = time();
 
 // Check if user is logged in and is admin
-if (!isset($_SESSION['username']) || $_SESSION['userlevel'] !== 'staff') {
+if (!isset($_SESSION['username']) || $_SESSION['userlevel'] !== 'admin') {
     header("Location: login.php");
     exit();
 }
 
+// Database 
 require_once 'config.php';
 
 // Function to get counts from database
-function getCount($conn, $table, $column = null, $values = null) {
-    if ($column && $values) {
-        if (is_array($values)) {
-            $placeholders = implode(',', array_fill(0, count($values), '?'));
-            $sql = "SELECT COUNT(*) as count FROM $table WHERE $column IN ($placeholders)";
-            $stmt = $conn->prepare($sql);
-            $types = str_repeat('s', count($values));
-            $stmt->bind_param($types, ...$values);
-        } else {
-            $sql = "SELECT COUNT(*) as count FROM $table WHERE $column = ?";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param('s', $values);
-        }
+function getCount($conn, $table, $column = null, $value = null) {
+    if ($column && $value) {
+        $sql = "SELECT COUNT(*) as count FROM $table WHERE $column = ?";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param('s', $value);
         $stmt->execute();
         $result = $stmt->get_result();
     } else {
-        // For tables where we just count all entries (feedback and announcements)
+        // For tables where we just count all entries
         $sql = "SELECT COUNT(*) as count FROM $table";
         $result = $conn->query($sql);
     }
@@ -55,14 +48,31 @@ function getCount($conn, $table, $column = null, $values = null) {
     return $row['count'];
 }
 
+// Function to get locked accounts count from multiple tables
+function getLockedAccountsCount($conn) {
+    $tables = ['admin', 'staff', 'customer'];
+    $total = 0;
+    
+    foreach ($tables as $table) {
+        $sql = "SELECT COUNT(*) as count FROM $table WHERE accountStatus = 'locked'";
+        $result = $conn->query($sql);
+        $row = $result->fetch_assoc();
+        $total += $row['count'];
+    }
+    
+    return $total;
+}
+
 // Get counts for each section
-$verificationCount = getCount($conn, 'customer', 'accountVerification', 'pending');
-$bookingCount = getCount($conn, 'booking', 'bookingStatus', 'Pending');
-$packageCount = getCount($conn, 'package', 'status', ['available', 'rejected']);
-$voucherCount = getCount($conn, 'voucher_batch', 'approvalStatus', ['approved', 'declined']);
-$inventoryCount = getCount($conn, 'inventory', 'status', ['available', 'rejected']);
-$feedbackCount = getCount($conn, 'feedback');
-$announcementCount = getCount($conn, 'announcement');
+$lockedAccountsCount = getLockedAccountsCount($conn);
+$packageCount = getCount($conn, 'package', 'status', 'pending');
+$voucherCount = getCount($conn, 'voucher_batch', 'approvalStatus', 'pending');
+$inventoryCount = getCount($conn, 'inventory', 'status', 'pending');
+$feedbackCount = getCount($conn, 'feedback', 'displayStatus', 'pending');
+
+// New counts for booking sections
+$bookingEditsCount = getCount($conn, 'booking_edits', 'edit_status', 'Pending');
+$connectionErrorCount = getCount($conn, 'booking', 'connectionStatus', 'error');
 
 $conn->close();
 ?>
@@ -72,24 +82,29 @@ $conn->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Staff Dashboard</title>
+    <title>Admin Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="style.css">
     <style>
         /* Sidebar Styles */
-
         .sidebar .sidebar-menu li a.nav-link {
-    color: #FFFFFF !important;
-}
+        color: #FFFFFF !important;
+        }
         .sidebar {
             width: 250px;
             background-color: #2c3e50;
             color: white;
             height: 100vh;
-            padding: 20px 0;
             position: fixed;
+            overflow-y: auto; /* Enable vertical scrolling */
+            overflow-x: hidden; /* Hide horizontal scrollbar */
+        }
+        
+        .sidebar-content {
+            padding: 20px 0;
+            min-height: 100%; /* Ensure content takes full height */
         }
         
         .sidebar-header {
@@ -101,6 +116,7 @@ $conn->close();
         .sidebar-menu {
             list-style: none;
             padding: 0;
+            margin: 0;
         }
         
         .sidebar-menu li {
@@ -114,13 +130,49 @@ $conn->close();
             background-color: #34495e;
         }
         
-.sidebar-menu li a.nav-link {
-        color: #FFFFFF;
-        }
-
         .sidebar-menu li.active {
             background-color: #34485f;
         }
+        
+
+        /* Custom scrollbar for webkit browsers */
+                .sidebar::-webkit-scrollbar {
+                    width: 6px;
+                }
+                
+                .sidebar::-webkit-scrollbar-track {
+                    background: #34495e;
+                }
+                
+                .sidebar::-webkit-scrollbar-thumb {
+                    background: #5a6c7d;
+                    border-radius: 3px;
+                }
+                
+                .sidebar::-webkit-scrollbar-thumb:hover {
+                    background: #7f8c8d;
+                }
+
+        @media (max-width: 576px) {
+            .sidebar {
+                width: 60px;
+            }
+
+            .main-content {
+                margin-left: 60px;
+                width: calc(100% - 60px);
+                padding: 15px;
+            }
+
+            .sidebar-menu li {
+                padding: 8px 10px;
+                font-size: 1.8vh;
+            }
+        }
+
+        
+
+        
         /* Main Content Styles */
         .main-content {
             margin-left: 250px;
@@ -222,16 +274,16 @@ $conn->close();
     <!-- Sidebar Navigation -->
     <div class="sidebar">
         <div class="sidebar-header">
-            <a class="navbar-brand" href="staff_dashboard.php"><img src="logo.png"></a>
+            <a class="navbar-brand" href="adminhome.php"><img src="logo.png"></a>
         </div>
         <ul class="sidebar-menu">
-            <li class="active"><a class="nav-link" href="staff_dashboard.php">DASHBOARD</a></li>
-            <li><a class="nav-link" href="staff_accounts.php">ACCOUNTS</a></li>
-            <li><a class="nav-link" href="staff_booking.php">BOOKINGS</a></li>
-            <li><a class="nav-link" href="staff_services.php">SERVICES</a></li>
-            <li><a class="nav-link" href="staff_landingReport.php">REPORTS</a></li>
-            <li><a class="nav-link" href="staff_announcements.php">ANNOUNCEMENTS</a></li>
-            <li><a class="nav-link" href="staff_resetpass.php">RESET PASSWORD</a></li>
+            <li><a class="nav-link" href="adminhome.php">DASHBOARD</a></li>
+            <li><a class="nav-link" href="admin_accounts.php">ACCOUNTS</a></li>
+            <li><a class="nav-link" href="admin_services.php">SERVICES</a></li>
+            <li><a class="nav-link" href="admin_booking.php">BOOKING MANAGEMENT</a></li>
+            <li class="active"><a class="nav-link" href="admin_management.php">REPORTS MANAGEMENT</a></li>
+            <li><a class="nav-link" href="admin_announcements.php">ANNOUNCEMENTS</a></li>
+            <li><a class="nav-link" href="admin_resetpass.php">RESET PASSWORD</a></li>
             <li><span><a class="nav-link" href="logout.php">LOGOUT</a></span></li>
         </ul>
     </div>
@@ -239,7 +291,7 @@ $conn->close();
     <!-- Main Content Area -->
     <div class="main-content">
         <div class="page-header">
-            <h2>STAFF DASHBOARD</h2>
+            <h2>ADMIN REPORTS MANAGEMENT</h2>
             <div class="user-info">
                 Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?> <i class="bi bi-person-circle"></i>
             </div>
@@ -247,95 +299,41 @@ $conn->close();
         
         <!-- Dashboard Cards -->
         <div class="dashboard-cards">
-            <a href="staff_accounts.php" class="dashboard-card">
-                <div class="card-content">
-                    <div class="card-icon">
-                        <i class="bi bi-person-check"></i>
-                    </div>
-                    <div class="card-text">
-                        <h3>Account Verifications</h3>
-                        <p>Pending customer verifications</p>
-                    </div>
-                </div>
-                <div class="card-count"><?php echo $verificationCount; ?></div>
-            </a>
+
             
-            <a href="staff_booking.php" class="dashboard-card">
-                <div class="card-content">
-                    <div class="card-icon">
-                        <i class="bi bi-calendar-check"></i>
-                    </div>
-                    <div class="card-text">
-                        <h3>Bookings</h3>
-                        <p>Pending approvals</p>
-                    </div>
-                </div>
-                <div class="card-count"><?php echo $bookingCount; ?></div>
-            </a>
-            
-                        <a href="staff_inventory.php" class="dashboard-card">
+            <a href="admin_reports.php" class="dashboard-card">
                 <div class="card-content">
                     <div class="card-icon">
                         <i class="bi bi-clipboard2-pulse"></i>
                     </div>
                     <div class="card-text">
-                        <h3>Inventory</h3>
-                        <p>Available/Rejected items</p>
+                        <h3>Business Reports</h3>
                     </div>
                 </div>
-                <div class="card-count"><?php echo $inventoryCount; ?></div>
             </a>
             
-            <a href="staff_packages.php" class="dashboard-card">
-                <div class="card-content">
-                    <div class="card-icon">
-                        <i class="bi bi-box-seam"></i>
-                    </div>
-                    <div class="card-text">
-                        <h3>Packages</h3>
-                        <p>Available/Rejected items</p>
-                    </div>
-                </div>
-                <div class="card-count"><?php echo $packageCount; ?></div>
-            </a>
-            
-            <a href="staff_vouchers.php" class="dashboard-card">
-                <div class="card-content">
-                    <div class="card-icon">
-                        <i class="bi bi-ticket-perforated"></i>
-                    </div>
-                    <div class="card-text">
-                        <h3>Vouchers</h3>
-                        <p>Approved/Declined batches</p>
-                    </div>
-                </div>
-                <div class="card-count"><?php echo $voucherCount; ?></div>
-            </a>
-            
-            <a href="staff_feedbacks.php" class="dashboard-card">
+            <a href="admin_feedbacks.php" class="dashboard-card">
                 <div class="card-content">
                     <div class="card-icon">
                         <i class="bi bi-chat-square-text"></i>
                     </div>
                     <div class="card-text">
                         <h3>Feedback</h3>
-                        <p>Total feedback entries</p>
+                        <p>Pending approval</p>
                     </div>
                 </div>
                 <div class="card-count"><?php echo $feedbackCount; ?></div>
             </a>
-            
-            <a href="staff_announcements.php" class="dashboard-card">
+
+            <a href="admin_agreementView.php" class="dashboard-card">
                 <div class="card-content">
                     <div class="card-icon">
-                        <i class="bi bi-megaphone"></i>
+                        <i class="bi bi-pencil-square"></i>
                     </div>
                     <div class="card-text">
-                        <h3>Announcements</h3>
-                        <p>Total announcements</p>
+                        <h3>List of Agreements</h3>
                     </div>
                 </div>
-                <div class="card-count"><?php echo $announcementCount; ?></div>
             </a>
         </div>
     </div>

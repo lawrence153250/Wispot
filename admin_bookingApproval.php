@@ -580,13 +580,9 @@ $conn->close();
         <ul class="sidebar-menu">
             <li><a class="nav-link" href="adminhome.php">DASHBOARD</a></li>
             <li><a class="nav-link" href="admin_accounts.php">ACCOUNTS</a></li>
-            <li><a class="nav-link" href="admin_packages.php">PACKAGES</a></li>
-            <li><a class="nav-link" href="admin_vouchers.php">VOUCHERS</a></li>
-            <li><a class="nav-link" href="admin_inventory.php">INVENTORY</a></li>
-            <li><a class="nav-link" href="admin_reports.php">REPORTS</a></li>
-            <li class="active"><a class="nav-link" href="admin_bookingApproval.php">BOOKING MANAGEMENT</a></li>
-            <li><a class="nav-link" href="admin_agreementView.php">AGREEMENTS</a></li>
-            <li><a class="nav-link" href="admin_feedbacks.php">FEEDBACKS</a></li>
+            <li><a class="nav-link" href="admin_services.php">SERVICES</a></li>
+            <li class="active"><a class="nav-link" href="admin_booking.php">BOOKING MANAGEMENT</a></li>
+            <li><a class="nav-link" href="admin_management.php">REPORTS MANAGEMENT</a></li>
             <li><a class="nav-link" href="admin_announcements.php">ANNOUNCEMENTS</a></li>
             <li><a class="nav-link" href="admin_resetpass.php">RESET PASSWORD</a></li>
             <li><span><a class="nav-link" href="logout.php">LOGOUT</a></span></li>
@@ -637,10 +633,7 @@ $conn->close();
                 <li><a class="dropdown-item" href="?sort=status&order=desc">Status (Z-A)</a></li>
             </ul>
         </div>
-        
-        <a href="admin_bookingView.php" class="btn btn-primary">
-            <i class="bi bi-calendar-check"></i> View Changes and Bookings
-        </a><br><br>
+
         <div class="table-responsive">
             <table class="bookings-table">
                <thead>

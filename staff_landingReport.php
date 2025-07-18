@@ -56,7 +56,6 @@ function getCount($conn, $table, $column = null, $values = null) {
 }
 
 // Get counts for each section
-$verificationCount = getCount($conn, 'customer', 'accountVerification', 'pending');
 $bookingCount = getCount($conn, 'booking', 'bookingStatus', 'Pending');
 $packageCount = getCount($conn, 'package', 'status', ['available', 'rejected']);
 $voucherCount = getCount($conn, 'voucher_batch', 'approvalStatus', ['approved', 'declined']);
@@ -225,11 +224,11 @@ $conn->close();
             <a class="navbar-brand" href="staff_dashboard.php"><img src="logo.png"></a>
         </div>
         <ul class="sidebar-menu">
-            <li class="active"><a class="nav-link" href="staff_dashboard.php">DASHBOARD</a></li>
+            <li><a class="nav-link" href="staff_dashboard.php">DASHBOARD</a></li>
             <li><a class="nav-link" href="staff_accounts.php">ACCOUNTS</a></li>
             <li><a class="nav-link" href="staff_booking.php">BOOKINGS</a></li>
             <li><a class="nav-link" href="staff_services.php">SERVICES</a></li>
-            <li><a class="nav-link" href="staff_landingReport.php">REPORTS</a></li>
+            <li class="active"><a class="nav-link" href="staff_landingReport.php">REPORTS</a></li>
             <li><a class="nav-link" href="staff_announcements.php">ANNOUNCEMENTS</a></li>
             <li><a class="nav-link" href="staff_resetpass.php">RESET PASSWORD</a></li>
             <li><span><a class="nav-link" href="logout.php">LOGOUT</a></span></li>
@@ -239,7 +238,7 @@ $conn->close();
     <!-- Main Content Area -->
     <div class="main-content">
         <div class="page-header">
-            <h2>STAFF DASHBOARD</h2>
+            <h2>STAFF REPORTS VIEW</h2>
             <div class="user-info">
                 Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?> <i class="bi bi-person-circle"></i>
             </div>
@@ -247,71 +246,18 @@ $conn->close();
         
         <!-- Dashboard Cards -->
         <div class="dashboard-cards">
-            <a href="staff_accounts.php" class="dashboard-card">
-                <div class="card-content">
-                    <div class="card-icon">
-                        <i class="bi bi-person-check"></i>
-                    </div>
-                    <div class="card-text">
-                        <h3>Account Verifications</h3>
-                        <p>Pending customer verifications</p>
-                    </div>
-                </div>
-                <div class="card-count"><?php echo $verificationCount; ?></div>
-            </a>
-            
-            <a href="staff_booking.php" class="dashboard-card">
-                <div class="card-content">
-                    <div class="card-icon">
-                        <i class="bi bi-calendar-check"></i>
-                    </div>
-                    <div class="card-text">
-                        <h3>Bookings</h3>
-                        <p>Pending approvals</p>
-                    </div>
-                </div>
-                <div class="card-count"><?php echo $bookingCount; ?></div>
-            </a>
-            
-                        <a href="staff_inventory.php" class="dashboard-card">
+
+            <a href="staff_reports.php" class="dashboard-card">
                 <div class="card-content">
                     <div class="card-icon">
                         <i class="bi bi-clipboard2-pulse"></i>
                     </div>
                     <div class="card-text">
-                        <h3>Inventory</h3>
-                        <p>Available/Rejected items</p>
+                        <h3>Reports</h3>
                     </div>
                 </div>
-                <div class="card-count"><?php echo $inventoryCount; ?></div>
             </a>
-            
-            <a href="staff_packages.php" class="dashboard-card">
-                <div class="card-content">
-                    <div class="card-icon">
-                        <i class="bi bi-box-seam"></i>
-                    </div>
-                    <div class="card-text">
-                        <h3>Packages</h3>
-                        <p>Available/Rejected items</p>
-                    </div>
-                </div>
-                <div class="card-count"><?php echo $packageCount; ?></div>
-            </a>
-            
-            <a href="staff_vouchers.php" class="dashboard-card">
-                <div class="card-content">
-                    <div class="card-icon">
-                        <i class="bi bi-ticket-perforated"></i>
-                    </div>
-                    <div class="card-text">
-                        <h3>Vouchers</h3>
-                        <p>Approved/Declined batches</p>
-                    </div>
-                </div>
-                <div class="card-count"><?php echo $voucherCount; ?></div>
-            </a>
-            
+
             <a href="staff_feedbacks.php" class="dashboard-card">
                 <div class="card-content">
                     <div class="card-icon">
@@ -325,18 +271,7 @@ $conn->close();
                 <div class="card-count"><?php echo $feedbackCount; ?></div>
             </a>
             
-            <a href="staff_announcements.php" class="dashboard-card">
-                <div class="card-content">
-                    <div class="card-icon">
-                        <i class="bi bi-megaphone"></i>
-                    </div>
-                    <div class="card-text">
-                        <h3>Announcements</h3>
-                        <p>Total announcements</p>
-                    </div>
-                </div>
-                <div class="card-count"><?php echo $announcementCount; ?></div>
-            </a>
+
         </div>
     </div>
 </body>

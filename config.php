@@ -7,10 +7,10 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 
-$conn = new mysqli('sql311.infinityfree.com', 'if0_38382334', 'PAyQbh24YXB', 'if0_38382334_wispotdb');
+// $conn = new mysqli('sql311.infinityfree.com', 'if0_38382334', 'PAyQbh24YXB', 'if0_38382334_wispotdb');
 
-// $conn = new mysqli('localhost', 'root', '', 'capstonesample');
-// // Create database connection
+$conn = new mysqli('localhost', 'root', '', 'capstonesample');
+// Create database connection
 
 
 // Check connection

@@ -286,13 +286,10 @@ $sentimentCounts = $conn->query($sentimentCountQuery);
         </div>
         <ul class="sidebar-menu">
             <li><a class="nav-link" href="staff_dashboard.php">DASHBOARD</a></li>
-            <li><a class="nav-link" href="staff_booking.php">BOOKINGS</a></li>
             <li><a class="nav-link" href="staff_accounts.php">ACCOUNTS</a></li>
-            <li><a class="nav-link" href="staff_packages.php">PACKAGES</a></li>
-            <li><a class="nav-link" href="staff_vouchers.php">VOUCHERS</a></li>
-            <li><a class="nav-link" href="staff_inventory.php">INVENTORY</a></li>
-            <li><a class="nav-link" href="staff_reports.php">REPORTS</a></li>
-            <li class="active"><a class="nav-link" href="staff_feedbacks.php">FEEDBACKS</a></li>
+            <li><a class="nav-link" href="staff_booking.php">BOOKINGS</a></li>
+            <li><a class="nav-link" href="staff_services.php">SERVICES</a></li>
+            <li class="active"><a class="nav-link" href="staff_landingReport.php">REPORTS</a></li>
             <li><a class="nav-link" href="staff_announcements.php">ANNOUNCEMENTS</a></li>
             <li><a class="nav-link" href="staff_resetpass.php">RESET PASSWORD</a></li>
             <li><span><a class="nav-link" href="logout.php">LOGOUT</a></span></li>

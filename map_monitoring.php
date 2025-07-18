@@ -478,7 +478,7 @@ if (isset($_GET['get_locations']) && $_GET['get_locations'] == '1') {
             });
             
             // Auto-refresh every 30 seconds
-            setInterval(loadMarkers, 60000);
+            setInterval(loadMarkers, 300000);
         }
 
         // Search for a specific location

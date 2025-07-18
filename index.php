@@ -19,8 +19,127 @@ require_once 'config.php';
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intro.js@7.2.0/minified/introjs.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
+<style>
+    /* Custom tour styling - more appealing version */
+    .introjs-overlay {
+        background-color: rgba(33, 37, 41, 0.8) !important;
+    }
+    
+    .introjs-tooltip {
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        max-width: 400px;
+        font-family: 'Outfit', sans-serif;
+    }
+    
+    .introjs-tooltip-header {
+        background-color: #0d6efd;
+        color: white;
+        border-radius: 12px 12px 0 0;
+        padding: 12px 16px;
+    }
+    
+    .introjs-tooltiptext {
+        padding: 16px;
+        font-size: 16px;
+        line-height: 1.5;
+    }
+    
+    .introjs-button {
+        border-radius: 8px !important;
+        padding: 8px 16px !important;
+        font-weight: 500 !important;
+        transition: all 0.2s !important;
+    }
+    
+    .introjs-skipbutton {
+        background-color: #dc3545 !important;
+        color: white !important;
+    }
+    
+    .introjs-skipbutton:hover {
+        background-color: #bb2d3b !important;
+        transform: translateY(-2px);
+    }
+    
+    .introjs-nextbutton {
+        background-color: #0d6efd !important;
+        color: white !important;
+    }
+    
+    .introjs-nextbutton:hover {
+        background-color: #0b5ed7 !important;
+        transform: translateY(-2px);
+    }
+    
+    .introjs-bullets ul li a {
+        background-color: #adb5bd !important;
+    }
+    
+    .introjs-bullets ul li a.active {
+        background-color: #0d6efd !important;
+    }
+    
+    /* Floating restart tour button */
+    .restart-tour-btn {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        z-index: 9999;
+        background-color: #0d6efd;
+        color: white;
+        border: none;
+        border-radius: 50px;
+        padding: 12px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .restart-tour-btn:hover {
+        background-color: #0b5ed7;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(13, 110, 253, 0.4);
+    }
+    
+    /* Special highlight for chatbot */
+    .introjs-helperLayer.chatbot-highlight {
+        border-radius: 50% !important;
+        box-shadow: 0 0 0 1000px rgba(33, 37, 41, 0.8),
+                    0 0 0 4px rgba(13, 110, 253, 0.8),
+                    0 0 20px 10px rgba(13, 110, 253, 0.4) !important;
+    }
+    /* Custom styling for profile tour */
+    .custom-profile-tooltip {
+        max-width: 350px;
+        border-radius: 12px;
+    }
+
+    .custom-profile-tooltip .introjs-tooltip-header {
+        background-color: #0d6efd;
+        color: white;
+        border-radius: 12px 12px 0 0;
+        padding: 12px 16px;
+    }
+
+    .custom-profile-highlight {
+        box-shadow: 0 0 0 1000px rgba(0,0,0,0.7),
+                    0 0 0 4px rgba(13, 110, 253, 0.8),
+                    0 0 20px 10px rgba(13, 110, 253, 0.4);
+    }
+
+    .introjs-helperLayer.custom-profile-highlight {
+        border-radius: 4px;
+    }
+</style>
 <body style="background-color: #f0f3fa;"> 
 <nav class="navbar navbar-expand-lg navbar-dark" id="grad">
     <div class="container">
@@ -301,6 +420,233 @@ require_once 'config.php';
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/intro.js@7.2.0/minified/intro.min.js"></script>
+<script>
+// Debugged tour implementation
+document.addEventListener('DOMContentLoaded', function() {
+    // Create restart tour button
+    const restartTourBtn = document.createElement('button');
+    restartTourBtn.className = 'restart-tour-btn';
+    restartTourBtn.innerHTML = `
+        <i class="bi bi-info-circle"></i> Show Tour Again
+    `;
+    restartTourBtn.onclick = startTour;
+    document.body.appendChild(restartTourBtn);
+
+    // Check if tour was previously skipped
+    if (!localStorage.getItem('wiSpotTourSkipped') && !localStorage.getItem('tourSkipped')) {
+        setTimeout(startTour, 1000);
+    }
+});
+
+// Add this style for the tour buttons
+const tourStyles = document.createElement('style');
+tourStyles.textContent = `
+    .booking-tooltip {
+        max-width: 350px;
+        border-radius: 12px;
+        font-family: 'Outfit', sans-serif;
+    }
+    .booking-tooltip .introjs-tooltip-header {
+        background-color: #0d6efd;
+        color: white;
+        border-radius: 12px 12px 0 0;
+        padding: 12px 16px;
+    }
+    .booking-highlight {
+        box-shadow: 0 0 0 1000px rgba(0,0,0,0.7),
+                    0 0 0 4px rgba(13, 110, 253, 0.8),
+                    0 0 20px 10px rgba(13, 110, 253, 0.4);
+    }
+    /* Custom skip button styles */
+    .introjs-skipbutton {
+        background-color: #dc3545 !important;
+        color: white !important;
+        padding: 4px 8px !important;
+        font-size: 12px !important;
+        margin-right: 5px !important;
+    }
+    .introjs-skipbutton:hover {
+        background-color: #c82333 !important;
+    }
+    /* Adjust other buttons to match */
+    .introjs-nextbutton, 
+    .introjs-prevbutton, 
+    .introjs-donebutton {
+        padding: 4px 8px !important;
+        font-size: 12px !important;
+    }
+`;
+document.head.appendChild(tourStyles);
+
+function startTour() {
+    // Clear any skip flags when manually starting tour
+    localStorage.removeItem('wiSpotTourSkipped');
+    localStorage.removeItem('tourSkipped');
+
+    // Try to find the chatbot element
+    const chatbotElement = document.querySelector('.chatbot-widget-container') || 
+                         document.querySelector('.chatbot-button') || 
+                         document.querySelector('.chatbot-toggler') ||
+                         document.querySelector('.chatbot-container');
+
+    const steps = [
+        {
+            title: "🌟 Welcome to Wi-Spot!",
+            intro: "<div style='text-align:center;'><img src='logoo.png' style='width:120px; margin-bottom:15px;'><br>Let us guide you through our WiFi rental services to help you get started!</div>",
+            position: 'center'
+        },
+        {
+            element: document.querySelector('.navbar-brand'),
+            title: "🏠 Home Navigation",
+            intro: "Our logo is your home button. Click here anytime to return to the homepage.",
+            position: 'bottom'
+        },
+        {
+            element: document.querySelector('a[href="booking.php"]'),
+            title: "📅 Easy Booking",
+            intro: "Click here to start the booking process for our WiFi rental services. Login first to access this page",
+            position: 'bottom'
+        },
+        {
+            element: document.querySelector('a[href="mapcoverage.php"]'),
+            title: "🗺️ Coverage Map",
+            intro: "Click here to visualize your booking and check how many routers are needed for your event location",
+            position: 'bottom'
+        },
+        {
+            element: document.querySelector('a[href="customer_voucher.php"]'),
+            title: "🎁 Discounts & Vouchers",
+            intro: "View available discounts and vouchers you can use for your bookings.",
+            position: 'bottom'
+        },
+        {
+            element: document.querySelector('a[href="aboutus.php"]'),
+            title: "ℹ️ About Our Company",
+            intro: "Learn about our mission, values, and the team behind Wi-Spot.",
+            position: 'bottom'
+        },
+        {
+            element: document.querySelector('.carousel'),
+            title: "⭐ Customer Feedback",
+            intro: "See what our satisfied customers say about our WiFi rental services. Their experiences might help you decide!",
+            position: 'top'
+        },
+        {
+            element: document.querySelector('.foot-icons a'),
+            title: "👍 Connect With Us",
+            intro: "Follow us on Facebook for updates, tips, and special promotions.",
+            position: 'top'
+        },
+        {
+            element: document.querySelector('.policy-links a[href="contactus.php"]'),
+            title: "📞 Contact Support",
+            intro: "Need help? Reach out to our friendly support team here.",
+            position: 'top'
+        },
+        {
+            element: chatbotElement,
+            title: "💬 24/7 Chat Support",
+            intro: "Our AI assistant is always available to answer your questions! Click the chat icon at the bottom right anytime for instant help.",
+            position: 'left'
+        },
+        {
+            element: document.querySelector('.auth-buttons') || document.querySelector('.navbar-nav.ms-auto'),
+            title: "🔐 Your Account",
+            intro: "Sign up or log in here to start the booking process and manage your rentals",
+            position: 'bottom'
+        },
+        {
+            title: "🚀 You're All Set!",
+            intro: "Start exploring Wi-Spot! Ready to book? Click the 'BOOK NOW' button on our homepage.",
+            position: 'center'
+        }
+    ];
+
+    // Filter out any null elements (in case selectors don't match)
+    const validSteps = steps.filter(step => {
+        if (step.element && !document.body.contains(step.element)) {
+            console.warn('Element not found for step:', step.title);
+            return false;
+        }
+        return true;
+    });
+
+    // Initialize and start the tour
+    const tour = introJs();
+    tour.setOptions({
+        steps: validSteps,
+        nextLabel: 'Next →',
+        prevLabel: '← Back',
+        skipLabel: 'Skip',
+        doneLabel: 'Finish',
+        exitOnOverlayClick: false
+    });
+
+    tour.oncomplete(function() {
+        localStorage.setItem('wiSpotTourSkipped', 'true');
+    }).onexit(function() {
+        localStorage.setItem('wiSpotTourSkipped', 'true');
+    }).start();
+}
+
+// Profile tour (only for logged-in users)
+document.addEventListener('DOMContentLoaded', function() {
+    <?php if (isset($_SESSION['username'])) { ?>
+        if (!localStorage.getItem('profileTourShown')) {
+            setTimeout(startProfileTour, 1500);
+        }
+    <?php } ?>
+});
+
+function startProfileTour() {
+    const profileElement = document.querySelector('.nav-link[href="profile.php"]') || 
+                         document.querySelector('a[href="profile.php"]') ||
+                         document.querySelector('.navbar-nav.ms-auto .nav-link');
+
+    if (!profileElement) {
+        console.log("Profile element not found");
+        return;
+    }
+
+    introJs().setOptions({
+        steps: [
+            {
+                element: profileElement,
+                title: "👤 Your Profile",
+                intro: "Now that you're logged in, click your username here to access your profile dashboard.",
+                position: 'bottom'
+            },
+            {
+                element: document.querySelector('a[href="profile.php"]'),
+                title: "Profile Features",
+                intro: `<div style="text-align:left">
+                        <p>In your profile you can:</p>
+                        <ul>
+                            <li>📝 View and edit personal information</li>
+                            <li>🆔 Upload verification documents</li>
+                            <li>📷 Change your profile picture</li>
+                            <li>💳 View transaction history</li>
+                            <li>💰 Make payments for bookings</li>
+                            <li>📦 Track current rentals</li>
+                        </ul>
+                        </div>`,
+                position: 'right'
+            }
+        ],
+        nextLabel: 'Next →',
+        prevLabel: '← Back',
+        doneLabel: 'Got It!',
+        exitOnOverlayClick: false,
+        tooltipClass: 'custom-profile-tooltip',
+        highlightClass: 'custom-profile-highlight'
+    }).oncomplete(function() {
+        localStorage.setItem('profileTourShown', 'true');
+    }).onexit(function() {
+        localStorage.setItem('profileTourShown', 'true');
+    }).start();
+}
+</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </body>
 </html>

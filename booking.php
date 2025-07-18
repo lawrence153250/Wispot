@@ -297,6 +297,7 @@ $conn->close();
             margin-top: 0.25rem;
             display: none;
         }
+
     </style>
 </head>
 <body style="background-color: #f0f3fa;"> <nav class="navbar navbar-expand-lg navbar-dark" id="grad">
@@ -851,6 +852,237 @@ function computePrice(packageId, dateOfBooking, dateOfReturn) {
     const numberOfDays = (endDate - startDate) / (1000 * 60 * 60 * 24) + 1;
     return packagePrices[packageId] * numberOfDays;
 }
+
+// Booking Page Tour - Fixed Version
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we're on the booking page
+    if (window.location.pathname.includes('booking.php')) {
+        // Load Intro.js CSS dynamically
+        const introCss = document.createElement('link');
+        introCss.rel = 'stylesheet';
+        introCss.href = 'https://cdn.jsdelivr.net/npm/intro.js@7.2.0/minified/introjs.min.css';
+        document.head.appendChild(introCss);
+
+        // Create restart tour button
+        const bookingTourBtn = document.createElement('button');
+        bookingTourBtn.className = 'booking-tour-btn';
+        bookingTourBtn.innerHTML = `
+            <i class="bi bi-info-circle"></i> Booking Help
+        `;
+        bookingTourBtn.onclick = function() {
+            localStorage.removeItem('bookingTourShown');
+            startBookingTour();
+        };
+        document.body.appendChild(bookingTourBtn);
+
+        // Add styles for the tour button
+        const buttonStyle = document.createElement('style');
+        buttonStyle.textContent = `
+            .booking-tour-btn {
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                z-index: 9999;
+                background-color: #0d6efd;
+                color: white;
+                border: none;
+                border-radius: 50px;
+                padding: 10px 16px;
+                font-size: 14px;
+                font-weight: 600;
+                box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                cursor: pointer;
+                transition: all 0.3s;
+            }
+            .booking-tour-btn:hover {
+                background-color: #0b5ed7;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(13, 110, 253, 0.4);
+            }
+        `;
+        document.head.appendChild(buttonStyle);
+
+        // Add this style for the tour buttons
+        const tourStyles = document.createElement('style');
+        tourStyles.textContent = `
+            .booking-tooltip {
+                max-width: 350px;
+                border-radius: 12px;
+                font-family: 'Outfit', sans-serif;
+            }
+            .booking-tooltip .introjs-tooltip-header {
+                background-color: #0d6efd;
+                color: white;
+                border-radius: 12px 12px 0 0;
+                padding: 12px 16px;
+            }
+            .booking-highlight {
+                box-shadow: 0 0 0 1000px rgba(0,0,0,0.7),
+                            0 0 0 4px rgba(13, 110, 253, 0.8),
+                            0 0 20px 10px rgba(13, 110, 253, 0.4);
+            }
+            /* Custom skip button styles */
+            .introjs-skipbutton {
+                background-color: #dc3545 !important;
+                color: white !important;
+                padding: 4px 8px !important;
+                font-size: 12px !important;
+                margin-right: 5px !important;
+            }
+            .introjs-skipbutton:hover {
+                background-color: #c82333 !important;
+            }
+            /* Adjust other buttons to match */
+            .introjs-nextbutton, 
+            .introjs-prevbutton, 
+            .introjs-donebutton {
+                padding: 4px 8px !important;
+                font-size: 12px !important;
+            }
+        `;
+        document.head.appendChild(tourStyles);
+
+        // Check if booking tour was previously skipped
+        if (!localStorage.getItem('bookingTourShown')) {
+            // Load Intro.js dynamically
+            const introJsScript = document.createElement('script');
+            introJsScript.src = 'https://cdn.jsdelivr.net/npm/intro.js@7.2.0/minified/intro.min.js';
+            introJsScript.onload = function() {
+                setTimeout(startBookingTour, 1500);
+            };
+            document.head.appendChild(introJsScript);
+        }
+    }
+});
+
+
+function startBookingTour() {
+    // Ensure introJs is available
+    if (typeof introJs === 'undefined') {
+        console.error('Intro.js not loaded');
+        return;
+    }
+
+    const steps = [
+        {
+            title: "📋 Booking Process Guide",
+            intro: "Let us walk you through the booking form to make your reservation easy and clear!",
+            position: 'center'
+        },
+        {
+            element: document.querySelector('.user-info-section'),
+            title: "👤 Your Information",
+            intro: "This section shows your account details that we'll use for the booking. Please verify they're correct.",
+            position: 'right'
+        },
+        {
+            element: document.querySelector('#dateOfBooking'),
+            title: "📅 Rental Start Date",
+            intro: "Select when you need the WiFi service to begin. Choose a date at least 2 days from today for processing.",
+            position: 'right'
+        },
+        {
+            element: document.querySelector('#dateOfReturn'),
+            title: "📅 Rental End Date",
+            intro: "Select when you'll return the equipment. Rental duration affects the total price.",
+            position: 'right'
+        },
+        {
+            element: document.querySelector('#eventLocation'),
+            title: "📍 Event Location",
+            intro: "Enter the complete address where the WiFi will be used. This helps us check coverage and delivery options.",
+            position: 'right'
+        },
+        {
+            element: document.querySelector('a[href="booking_customization.php"]'),
+            title: "✨ Customization Options",
+            intro: "Need special requirements? Click here to customize your package beyond our standard options.",
+            position: 'right'
+        },
+        {
+            element: document.querySelector('.package-selection'),
+            title: "📦 Package Selection",
+            intro: "Choose the package that fits your needs. Each includes different equipment and bandwidth options.",
+            position: 'top'
+        },
+        {
+            element: document.querySelector('[data-bs-target="#lending"]'),
+            title: "📜 Lending Agreement",
+            intro: "Please review our terms and conditions before proceeding with your booking.",
+            position: 'top'
+        },
+        {
+            element: document.querySelector('.btn-primary'),
+            title: "✅ Final Step",
+            intro: "After selecting your package and reviewing the agreement, click here to complete your booking!",
+            position: 'top'
+        },
+        {
+            title: "🎉 Ready to Book!",
+            intro: "You're now familiar with the booking process! Complete all fields to reserve your WiFi package.",
+            position: 'center'
+        }
+    ];
+
+    // Filter out any null elements and log warnings
+    const validSteps = steps.filter(step => {
+        if (step.element && !document.body.contains(step.element)) {
+            console.warn('Tour element not found:', step.title, step.element);
+            return false;
+        }
+        return true;
+    });
+
+    // Debug: Log the steps we're about to show
+    console.log('Starting tour with steps:', validSteps);
+
+    try {
+        introJs().setOptions({
+            steps: validSteps,
+            nextLabel: 'Next →',
+            prevLabel: '← Back',
+            skipLabel: 'Skip',
+            doneLabel: 'Finish',
+            exitOnOverlayClick: false,
+            tooltipClass: 'booking-tooltip',
+            highlightClass: 'booking-highlight'
+        })
+        .oncomplete(function() {
+            localStorage.setItem('bookingTourShown', 'true');
+        })
+        .onexit(function() {
+            localStorage.setItem('bookingTourShown', 'true');
+        })
+        .start();
+    } catch (e) {
+        console.error('Error starting tour:', e);
+    }
+}
+
+// Add tour styles
+const tourStyles = document.createElement('style');
+tourStyles.textContent = `
+    .booking-tooltip {
+        max-width: 350px;
+        border-radius: 12px;
+        font-family: 'Outfit', sans-serif;
+    }
+    .booking-tooltip .introjs-tooltip-header {
+        background-color: #0d6efd;
+        color: white;
+        border-radius: 12px 12px 0 0;
+        padding: 12px 16px;
+    }
+    .booking-highlight {
+        box-shadow: 0 0 0 1000px rgba(0,0,0,0.7),
+                    0 0 0 4px rgba(13, 110, 253, 0.8),
+                    0 0 20px 10px rgba(13, 110, 253, 0.4);
+    }
+`;
+document.head.appendChild(tourStyles);
 </script>
 </body>
 </html>

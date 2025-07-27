@@ -477,7 +477,7 @@ if (isset($_GET['get_locations']) && $_GET['get_locations'] == '1') {
                 }
             });
             
-            // Auto-refresh every 30 seconds
+            // Auto-refresh every 5 minutes
             setInterval(loadMarkers, 300000);
         }
 

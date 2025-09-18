@@ -729,7 +729,7 @@ if (isset($_GET['get_locations']) && $_GET['get_locations'] == '1') {
     
     <!-- Load Google Maps API with your API key -->
     <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCFx7Z_5qK__AetA_wIPEFEpuAhIxIsouI&callback=initMap">
+        src="https://maps.googleapis.com/maps/api/js?key=${{ secrets.map_api }}">
     </script>
 </body>
 </html>

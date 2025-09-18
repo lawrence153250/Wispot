@@ -558,7 +558,7 @@ if (isset($_SESSION['selected_equipment'])) {
   </script>
 
   <script
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCFx7Z_5qK__AetA_wIPEFEpuAhIxIsouI&libraries=places,drawing,geometry&callback=initMap"
+    src="https://maps.googleapis.com/maps/api/js?key=${{ secrets.map_api }}&libraries=places,drawing,geometry&callback=initMap"
     async
     defer
   ></script>

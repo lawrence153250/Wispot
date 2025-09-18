@@ -171,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // Xendit Payment
-            $xenditSecretKey = 'xnd_development_Cbav1oJEw2TZJjRg4y3Cu2PmJyeJ6VIo4psrih1UaieTgLlmsZ3XUbwBS5WGAXa';
+            $xenditSecretKey = '${{ secrets.xendit_api}}';
 
             $data = [
                 'external_id' => 'invoice-' . time() . '-' . $bookingId,
